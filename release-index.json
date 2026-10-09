@@ -1,0 +1,7 @@
+{
+  "schema": "heaven-toolbox/releases/v1",
+  "repository": "fengie/heaven-toolbox-release",
+  "source_repository": "fengie/heaven-toolbox",
+  "publication_enabled": false,
+  "releases": []
+}
