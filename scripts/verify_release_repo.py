@@ -23,7 +23,17 @@ def validate(root: Path = ROOT) -> dict:
     p = json.loads((root / ".heaven/update-policy.json").read_text(encoding="utf-8"))
     if p.get("repository") != REPO or p.get("kind") != "release-channel":
         raise ValueError("Incorrect canonical release repository identity")
-    if p.get("branch") != "main" or p.get("source_update", {}).get("strategy") != "ff-only":
+    s = p.get("source_update")
+    if (
+        p.get("schema") != "heaven-toolbox/update-policy/v1"
+        or p.get("branch") != "main"
+        or not isinstance(s, dict)
+        or s.get("strategy") != "ff-only"
+        or s.get("required") is not True
+        or s.get("controller") != "heaven-toolbox/repo-autoupdate"
+        or type(s.get("poll_interval_minutes")) is not int
+        or not 1 <= s["poll_interval_minutes"] <= 60
+    ):
         raise ValueError("Unsupported source update policy")
     if p.get("runtime_update", {}).get("mode") != "release-channel":
         raise ValueError("Incorrect runtime release channel mode")

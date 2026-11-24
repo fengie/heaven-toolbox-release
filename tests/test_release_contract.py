@@ -41,6 +41,30 @@ class LockedReleaseContractTests(unittest.TestCase):
         for item in p["runtime_update"]["evidence_paths"]:
             self.assertTrue((ROOT / item).is_file(), item)
 
+    def test_source_controller_and_literal_scalars_required(self):
+        cases = [
+            ("controller", None), ("controller", "other/controller"),
+            ("controller", ["heaven-toolbox/repo-autoupdate"]),
+            ("required", False), ("required", "true"),
+            ("poll_interval_minutes", True), ("poll_interval_minutes", "1"),
+            ("poll_interval_minutes", 0), ("poll_interval_minutes", 61),
+        ]
+        for field, value in cases:
+            with self.subTest(field=field, value=value), tempfile.TemporaryDirectory() as tmp:
+                p = Path(tmp)
+                (p / ".heaven").mkdir()
+                policy = json.loads((ROOT / ".heaven/update-policy.json").read_text())
+                if value is None:
+                    policy["source_update"].pop(field)
+                else:
+                    policy["source_update"][field] = value
+                (p / ".heaven/update-policy.json").write_text(json.dumps(policy))
+                (p / "release-index.json").write_bytes((ROOT / "release-index.json").read_bytes())
+                subprocess.run(["git", "init", "--quiet", "--template="], cwd=p, check=True)
+                subprocess.run(["git", "add", "--", "release-index.json", ".heaven/update-policy.json"], cwd=p, check=True)
+                with self.assertRaisesRegex(ValueError, "Unsupported source update policy"):
+                    validate(p)
+
     def test_no_release_publishing_workflow(self):
         w = (ROOT / ".github/workflows/release-repo-policy.yml").read_text()
         self.assertIn("contents: read", w)
